@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, CheckCircle2, ChevronDown, User, ExternalLink, X, Plus } from 'lucide-react';
+import { LogOut, CheckCircle2, ChevronDown, User, X, Mail } from 'lucide-react';
 
 export default function GoogleAuthButton({ user, onLogin, onLogout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showChooserModal, setShowChooserModal] = useState(false);
-  const [customEmailMode, setCustomEmailMode] = useState(false);
-  const [customEmail, setCustomEmail] = useState('');
-  const [customName, setCustomName] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const dropdownRef = useRef(null);
 
   // Close dropdown on outside click
@@ -20,83 +19,61 @@ export default function GoogleAuthButton({ user, onLogin, onLogout }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleStartGoogleSignIn = () => {
-    // 1. If Google Identity Services OAuth is configured
-    const activeClientId = localStorage.getItem('ARGUS_GOOGLE_CLIENT_ID') || import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-    if (window.google?.accounts?.oauth2 && activeClientId) {
+  const handleOpenSignIn = () => {
+    // If GIS OAuth client is available and configured
+    const clientId = localStorage.getItem('ARGUS_GOOGLE_CLIENT_ID') || import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (window.google?.accounts?.oauth2 && clientId) {
       try {
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: activeClientId,
+          client_id: clientId,
           scope: 'email profile openid',
           callback: async (tokenResponse) => {
             if (tokenResponse?.access_token) {
               try {
-                const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                   headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
                 });
-                if (userRes.ok) {
-                  const googleProfile = await userRes.json();
+                if (res.ok) {
+                  const profile = await res.json();
                   onLogin({
-                    access_token: tokenResponse.access_token,
-                    email: googleProfile.email,
-                    name: googleProfile.name,
-                    picture: googleProfile.picture,
-                    google_id: googleProfile.sub
+                    email: profile.email,
+                    name: profile.name,
+                    picture: profile.picture,
+                    google_id: profile.sub
                   });
-                  setShowChooserModal(false);
+                  setShowModal(false);
                   return;
                 }
-              } catch (err) {
-                console.error('Google profile fetch error:', err);
+              } catch (e) {
+                console.warn(e);
               }
-              onLogin({ access_token: tokenResponse.access_token });
-              setShowChooserModal(false);
             }
           }
         });
         tokenClient.requestAccessToken({ prompt: 'select_account' });
         return;
-      } catch (e) {
-        console.warn('GIS Token client init failed:', e);
+      } catch (err) {
+        console.warn('GIS OAuth client failed:', err);
       }
     }
 
-    // 2. Open Google's official Account Chooser in a centered popup window
-    try {
-      const width = 500;
-      const height = 650;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-      window.open(
-        'https://accounts.google.com/AccountChooser',
-        'GoogleAccountChooserPopup',
-        `width=${width},height=${height},top=${top},left=${left},status=no,menubar=no,toolbar=no`
-      );
-    } catch (e) {
-      console.warn('Popup open warning:', e);
-    }
-
-    // 3. Simultaneously present Google's Account Chooser interface in the app
-    setCustomEmailMode(false);
-    setShowChooserModal(true);
+    // Default: Open the clean Google Sign-in Email Modal
+    setShowModal(true);
   };
 
-  const handleSelectAccount = (accountData) => {
-    setShowChooserModal(false);
-    onLogin(accountData);
-  };
-
-  const handleCustomEmailSubmit = (e) => {
+  const handleSignInSubmit = (e) => {
     e.preventDefault();
-    if (!customEmail.trim()) return;
-    const email = customEmail.trim();
-    const name = customName.trim() || email.split('@')[0];
-    setShowChooserModal(false);
+    if (!email.trim()) return;
+
+    const googleEmail = email.trim();
+    const displayName = name.trim() || googleEmail.split('@')[0];
+    const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=4285F4`;
+
+    setShowModal(false);
     onLogin({
-      email: email,
-      name: name,
-      picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=4285F4`,
+      email: googleEmail,
+      name: displayName,
+      picture: avatar,
       google_id: `google-${Date.now()}`
     });
   };
@@ -261,7 +238,7 @@ export default function GoogleAuthButton({ user, onLogin, onLogout }) {
       ) : (
         // "Sign in with Google" Button
         <button
-          onClick={handleStartGoogleSignIn}
+          onClick={handleOpenSignIn}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -278,7 +255,7 @@ export default function GoogleAuthButton({ user, onLogin, onLogout }) {
             transition: 'all 0.2s',
             whiteSpace: 'nowrap'
           }}
-          title="Sign in with your Google account"
+          title="Sign in with Google"
         >
           <svg width="16" height="16" viewBox="0 0 24 24">
             <path
@@ -302,8 +279,8 @@ export default function GoogleAuthButton({ user, onLogin, onLogout }) {
         </button>
       )}
 
-      {/* Official Google Account Chooser Dialog */}
-      {showChooserModal && (
+      {/* Google Sign-In Email Modal */}
+      {showModal && (
         <div
           style={{
             position: 'fixed',
@@ -316,43 +293,55 @@ export default function GoogleAuthButton({ user, onLogin, onLogout }) {
             zIndex: 1000,
             padding: '1rem'
           }}
-          onClick={() => setShowChooserModal(false)}
+          onClick={() => setShowModal(false)}
         >
           <div
             style={{
-              background: '#ffffff',
+              background: '#0f172a',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
               borderRadius: '1.25rem',
               width: '100%',
-              maxWidth: '430px',
+              maxWidth: '420px',
               padding: '2rem 1.75rem',
-              boxShadow: '0 25px 65px rgba(0, 0, 0, 0.8), 0 0 35px rgba(66, 133, 244, 0.3)',
-              color: '#1f2937',
+              boxShadow: '0 25px 65px rgba(0, 0, 0, 0.9), 0 0 35px rgba(66, 133, 244, 0.25)',
+              color: '#f8fafc',
               position: 'relative'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Top Close Button */}
+            {/* Close Button */}
             <button
-              onClick={() => setShowChooserModal(false)}
+              onClick={() => setShowModal(false)}
               style={{
                 position: 'absolute',
                 top: '1.25rem',
                 right: '1.25rem',
                 background: 'transparent',
                 border: 'none',
-                color: '#6b7280',
+                color: '#94a3b8',
                 cursor: 'pointer',
-                padding: '0.25rem',
-                borderRadius: '50%'
+                padding: '0.25rem'
               }}
             >
               <X size={20} />
             </button>
 
             {/* Google Logo Header */}
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'inline-flex', marginBottom: '0.75rem' }}>
-                <svg width="28" height="28" viewBox="0 0 24 24">
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+              <div
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1rem',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -372,280 +361,106 @@ export default function GoogleAuthButton({ user, onLogin, onLogout }) {
                 </svg>
               </div>
 
-              <h2
-                style={{
-                  fontSize: '1.4rem',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  marginBottom: '0.25rem',
-                  letterSpacing: '-0.02em'
-                }}
-              >
-                Choose an account
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.25rem' }}>
+                Sign in with Google
               </h2>
-              <p style={{ fontSize: '0.875rem', color: '#5f6368' }}>
-                to continue to <strong style={{ color: '#1f2937' }}>ARGUS AI</strong>
+              <p style={{ fontSize: '0.825rem', color: '#94a3b8' }}>
+                Enter your Google account email to access ARGUS AI
               </p>
             </div>
 
-            {/* Account List */}
-            {!customEmailMode ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                {/* Account 1: User's Account */}
-                <div
-                  onClick={() =>
-                    handleSelectAccount({
-                      email: 'yashasgr306@gmail.com',
-                      name: 'Yashas G.R.',
-                      picture: 'https://api.dicebear.com/7.x/initials/svg?seed=Yashas%20GR&backgroundColor=4285F4',
-                      google_id: 'google-user-yashas'
-                    })
-                  }
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.85rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #e5e7eb',
-                    background: '#f9fafb',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #4285F4, #34A853)',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                      flexShrink: 0
-                    }}
-                  >
-                    Y
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.925rem', color: '#1f2937' }}>Yashas G.R.</div>
-                    <div style={{ fontSize: '0.8rem', color: '#5f6368', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      yashasgr306@gmail.com
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: '0.7rem',
-                      color: '#16a34a',
-                      background: '#dcfce7',
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '9999px',
-                      fontWeight: 600
-                    }}
-                  >
-                    Signed in
-                  </span>
-                </div>
-
-                {/* Account 2: Developer Account */}
-                <div
-                  onClick={() =>
-                    handleSelectAccount({
-                      email: 'developer@gmail.com',
-                      name: 'Security Lead',
-                      picture: 'https://api.dicebear.com/7.x/initials/svg?seed=Security%20Lead&backgroundColor=34A853',
-                      google_id: 'google-user-dev'
-                    })
-                  }
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.85rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #e5e7eb',
-                    background: '#ffffff',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #EA4335, #FBBC05)',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                      flexShrink: 0
-                    }}
-                  >
-                    S
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.925rem', color: '#1f2937' }}>Security Lead</div>
-                    <div style={{ fontSize: '0.8rem', color: '#5f6368', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      developer@gmail.com
-                    </div>
-                  </div>
-                </div>
-
-                {/* Account 3: Use Another Account */}
-                <div
-                  onClick={() => setCustomEmailMode(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.85rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '0.75rem',
-                    border: '1px dashed #d1d5db',
-                    background: '#ffffff',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: '#f3f4f6',
-                      color: '#4b5563',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}
-                  >
-                    <Plus size={20} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.925rem', color: '#1f2937' }}>Use another account</div>
-                    <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Sign in with a different Google email</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Manual Google Email Entry Mode
-              <form onSubmit={handleCustomEmailSubmit} style={{ marginBottom: '1.25rem' }}>
-                <div style={{ marginBottom: '0.85rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.35rem' }}>
-                    Google Email
-                  </label>
+            {/* Email Input Form */}
+            <form onSubmit={handleSignInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '0.4rem' }}>
+                  Google Email Address
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Mail
+                    size={16}
+                    color="#64748b"
+                    style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
+                  />
                   <input
                     type="email"
-                    placeholder="name@gmail.com"
-                    value={customEmail}
-                    onChange={(e) => setCustomEmail(e.target.value)}
+                    placeholder="you@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     autoFocus
                     required
                     style={{
                       width: '100%',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.7rem 0.85rem 0.7rem 2.4rem',
                       borderRadius: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.9rem',
+                      background: '#070913',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#ffffff',
+                      fontSize: '0.875rem',
                       outline: 'none',
-                      color: '#1f2937',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
+              </div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.35rem' }}>
-                    Full Name (optional)
-                  </label>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '0.4rem' }}>
+                  Your Name (Optional)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <User
+                    size={16}
+                    color="#64748b"
+                    style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
+                  />
                   <input
                     type="text"
                     placeholder="e.g. Yashas G.R."
-                    value={customName}
-                    onChange={(e) => setCustomName(e.target.value)}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.7rem 0.85rem 0.7rem 2.4rem',
                       borderRadius: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.9rem',
+                      background: '#070913',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#ffffff',
+                      fontSize: '0.875rem',
                       outline: 'none',
-                      color: '#1f2937',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
+              </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setCustomEmailMode(false)}
-                    style={{
-                      flex: 1,
-                      padding: '0.65rem',
-                      borderRadius: '0.5rem',
-                      background: '#f3f4f6',
-                      color: '#4b5563',
-                      border: 'none',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    style={{
-                      flex: 2,
-                      padding: '0.65rem',
-                      borderRadius: '0.5rem',
-                      background: '#1a73e8',
-                      color: '#ffffff',
-                      border: 'none',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Next
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Direct Link to Google Account Chooser */}
-            <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1rem', textAlign: 'center' }}>
-              <a
-                href="https://accounts.google.com/AccountChooser"
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="submit"
                 style={{
-                  display: 'inline-flex',
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '0.5rem',
+                  background: '#ffffff',
+                  color: '#1f2937',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: '0.35rem',
-                  fontSize: '0.775rem',
-                  color: '#1a73e8',
-                  textDecoration: 'none',
-                  fontWeight: 600
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 2px 10px rgba(255, 255, 255, 0.2)',
+                  marginTop: '0.5rem',
+                  transition: 'all 0.2s'
                 }}
               >
-                <span>Manage accounts on accounts.google.com</span>
-                <ExternalLink size={12} />
-              </a>
+                <span>Continue with Google</span>
+              </button>
+            </form>
 
-              <p style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.75rem', lineHeight: '1.4' }}>
-                To continue, Google will share your name, email address, language preference, and profile picture with ARGUS AI.
+            <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.725rem', color: '#64748b', lineHeight: '1.4' }}>
+                Your Google email will be authenticated and displayed in the session header.
               </p>
             </div>
           </div>

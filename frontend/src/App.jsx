@@ -27,7 +27,10 @@ import {
   UserCheck,
   RefreshCw,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Key,
+  Package,
+  FileCode
 } from 'lucide-react';
 
 export default function App() {
@@ -38,7 +41,7 @@ export default function App() {
   const [currentScan, setCurrentScan] = useState(null);
   const [previousScan, setPreviousScan] = useState(null);
   const [showRescanDiff, setShowRescanDiff] = useState(false);
-  const [activeScenario, setActiveScenario] = useState('vulnerable');
+  const [activeScenario, setActiveScenario] = useState('awaiting');
 
   const [selectedFinding, setSelectedFinding] = useState(null);
   const [scanning, setScanning] = useState(false);
@@ -68,9 +71,9 @@ export default function App() {
       })
       .catch(console.warn);
 
-    // Pre-populate with initial scenario state
-    setCurrentScan(FALLBACK_VULNERABLE_SCAN);
-    setActiveScenario('vulnerable');
+    // Initial state: NO scan loaded yet (clean awaiting upload)
+    setCurrentScan(null);
+    setActiveScenario('awaiting');
   }, []);
 
   const handleGoogleLogin = async (credentialResponse) => {
@@ -98,6 +101,7 @@ export default function App() {
 
   const handleFileUpload = async (file) => {
     setScanning(true);
+    setCurrentScan(null); // Clear previous scan so new upload results are fresh
     setErrorMsg('');
     setShowRescanDiff(false);
 
@@ -120,6 +124,7 @@ export default function App() {
 
   const handleSampleLoad = async (sampleType) => {
     setScanning(true);
+    setCurrentScan(null);
     setErrorMsg('');
     setShowRescanDiff(false);
 
@@ -230,7 +235,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Security Auditor (The Landing & Live Interactive Window) */}
+        {/* Tab 1: Security Auditor */}
         {activeTab === 'auditor' && (
           <div>
             {/* HERO SECTION */}
@@ -408,7 +413,7 @@ export default function App() {
                             letterSpacing: '-0.02em'
                           }}
                         >
-                          Dashboard
+                          Codebase Security Dashboard
                         </h2>
                       </div>
                       <div
@@ -421,7 +426,7 @@ export default function App() {
                         }}
                       >
                         <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                          Live Security Review Agent
+                          Deterministic Static Analysis & Grounded Review
                         </span>
                         {currentUser && (
                           <span
@@ -449,265 +454,384 @@ export default function App() {
 
                     {/* Active Scenario Indicator */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Loaded Target:</span>
+                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Status:</span>
                       <span
                         style={{
                           padding: '0.35rem 0.85rem',
                           borderRadius: '9999px',
                           fontSize: '0.75rem',
                           fontWeight: '700',
-                          background:
-                            activeScenario === 'vulnerable'
-                              ? 'rgba(239, 68, 68, 0.15)'
-                              : activeScenario === 'clean'
-                              ? 'rgba(16, 185, 129, 0.15)'
-                              : 'rgba(56, 189, 248, 0.15)',
-                          color:
-                            activeScenario === 'vulnerable'
-                              ? '#f87171'
-                              : activeScenario === 'clean'
-                              ? '#34d399'
-                              : '#38bdf8',
+                          background: !currentScan
+                            ? 'rgba(100, 116, 139, 0.15)'
+                            : activeScenario === 'vulnerable'
+                            ? 'rgba(239, 68, 68, 0.15)'
+                            : activeScenario === 'clean' || currentScan.total_findings === 0
+                            ? 'rgba(16, 185, 129, 0.15)'
+                            : 'rgba(56, 189, 248, 0.15)',
+                          color: !currentScan
+                            ? '#94a3b8'
+                            : activeScenario === 'vulnerable'
+                            ? '#f87171'
+                            : activeScenario === 'clean' || currentScan.total_findings === 0
+                            ? '#34d399'
+                            : '#38bdf8',
                           border: `1px solid ${
-                            activeScenario === 'vulnerable'
+                            !currentScan
+                              ? 'rgba(100, 116, 139, 0.3)'
+                              : activeScenario === 'vulnerable'
                               ? 'rgba(239, 68, 68, 0.3)'
-                              : activeScenario === 'clean'
+                              : activeScenario === 'clean' || currentScan.total_findings === 0
                               ? 'rgba(16, 185, 129, 0.3)'
                               : 'rgba(56, 189, 248, 0.3)'
                           }`
                         }}
                       >
-                        {activeScenario === 'vulnerable'
-                          ? '⚠️ vulnerable_project.zip (8 Flaws)'
-                          : activeScenario === 'clean'
-                          ? '✨ clean_project.zip (Score 85)'
-                          : `📂 ${currentScan?.filename || 'custom_upload.zip'}`}
+                        {!currentScan
+                          ? '📂 Awaiting Code Upload'
+                          : activeScenario === 'vulnerable'
+                          ? `⚠️ ${currentScan.filename} (${currentScan.total_findings} Flaws)`
+                          : currentScan.total_findings === 0
+                          ? `✨ ${currentScan.filename} (Score 100 - Clean)`
+                          : `📂 ${currentScan.filename} (${currentScan.total_findings} Flaws)`}
                       </span>
                     </div>
                   </div>
 
-                  {/* 3 Metric Cards Row */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                      gap: '1.25rem',
-                      marginBottom: '2rem'
-                    }}
-                  >
-                    {/* Card 1: Security Score */}
-                    <div className="card-stat">
+                  {/* STATE 1: BEFORE FILE UPLOAD (Clean Upload Interface, No Scanner Findings yet) */}
+                  {!currentScan && (
+                    <div>
+                      {/* Upload Dropzone */}
+                      <div style={{ marginBottom: '2rem' }}>
+                        <UploadZone onFileUpload={handleFileUpload} scanning={scanning} />
+                      </div>
+
+                      {/* Capabilities Guide */}
                       <div
                         style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: '0.75rem'
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                          gap: '1rem'
                         }}
                       >
-                        <div>
-                          <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
-                            Security Score & Audits
+                        <div className="card-stat" style={{ padding: '1.25rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#38bdf8' }}>
+                            <Terminal size={18} />
+                            <strong style={{ fontSize: '0.875rem', color: '#f8fafc' }}>Semgrep SAST</strong>
                           </div>
-                          <div
-                            style={{
-                              fontSize: '1.75rem',
-                              fontWeight: '800',
-                              color: scoreColor,
-                              marginTop: '0.25rem'
-                            }}
-                          >
-                            {currentScan ? Math.round(currentScan.score) : 0}{' '}
-                            <span style={{ fontSize: '0.9rem', color: '#64748b' }}>/ 100</span>
+                          <p style={{ fontSize: '0.775rem', color: '#94a3b8', lineHeight: '1.5' }}>
+                            Inspects code AST for command injection, SQL injection, and authorization bypasses.
+                          </p>
+                        </div>
+
+                        <div className="card-stat" style={{ padding: '1.25rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#f97316' }}>
+                            <Key size={18} />
+                            <strong style={{ fontSize: '0.875rem', color: '#f8fafc' }}>Gitleaks Secrets</strong>
                           </div>
+                          <p style={{ fontSize: '0.775rem', color: '#94a3b8', lineHeight: '1.5' }}>
+                            Entropy and regex detection for exposed API tokens, AWS keys, and private credentials.
+                          </p>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Posture Status</div>
-                          <div
-                            style={{
-                              fontSize: '0.85rem',
-                              fontWeight: '700',
-                              color: currentScan?.score >= 80 ? '#34d399' : '#f87171',
-                              marginTop: '0.25rem'
-                            }}
-                          >
-                            {currentScan?.score >= 80 ? '✓ Verified Secure' : '⚠️ Action Required'}
+
+                        <div className="card-stat" style={{ padding: '1.25rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#a855f7' }}>
+                            <Package size={18} />
+                            <strong style={{ fontSize: '0.875rem', color: '#f8fafc' }}>OSV-Scanner</strong>
                           </div>
+                          <p style={{ fontSize: '0.775rem', color: '#94a3b8', lineHeight: '1.5' }}>
+                            Audits project dependencies (requirements.txt) against known Open Source CVE advisories.
+                          </p>
+                        </div>
+
+                        <div className="card-stat" style={{ padding: '1.25rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#10b981' }}>
+                            <Sparkles size={18} />
+                            <strong style={{ fontSize: '0.875rem', color: '#f8fafc' }}>Granite Guardian</strong>
+                          </div>
+                          <p style={{ fontSize: '0.775rem', color: '#94a3b8', lineHeight: '1.5' }}>
+                            Generates grounded fix explanations and confirms elimination with automated rescan.
+                          </p>
                         </div>
                       </div>
-
-                      {/* Progress bar */}
-                      <div
-                        style={{
-                          width: '100%',
-                          height: '6px',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          borderRadius: '9999px',
-                          overflow: 'hidden',
-                          marginTop: '1.25rem'
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${currentScan ? Math.max(5, currentScan.score) : 5}%`,
-                            height: '100%',
-                            background: `linear-gradient(90deg, ${scoreColor}, #6366f1)`,
-                            borderRadius: '9999px',
-                            boxShadow: `0 0 10px ${scoreColor}`
-                          }}
-                        />
-                      </div>
-
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: '0.725rem',
-                          color: '#64748b',
-                          marginTop: '0.5rem'
-                        }}
-                      >
-                        <span>Target: {currentScan?.filename || 'codebase'}</span>
-                        <span>{currentScan?.total_findings || 0} Flaws Detected</span>
-                      </div>
-                    </div>
-
-                    {/* Card 2: Vulnerability Summary */}
-                    <div className="card-stat">
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: '0.75rem'
-                        }}
-                      >
-                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
-                          Vulnerability Summary
-                        </div>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Deterministic AST</span>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ color: '#cbd5e1' }}>Command Injections (Semgrep)</span>
-                          <strong style={{ color: currentScan?.critical_count > 0 ? '#f87171' : '#34d399' }}>
-                            {currentScan?.critical_count || 0} Critical
-                          </strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ color: '#cbd5e1' }}>Exposed Secrets (Gitleaks)</span>
-                          <strong
-                            style={{
-                              color:
-                                currentScan?.findings?.filter((f) => f.scanner_name === 'gitleaks').length > 0
-                                  ? '#fb923c'
-                                  : '#34d399'
-                            }}
-                          >
-                            {currentScan?.findings?.filter((f) => f.scanner_name === 'gitleaks').length || 0} Leaked
-                          </strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ color: '#cbd5e1' }}>Vulnerable Dependencies (OSV)</span>
-                          <strong
-                            style={{
-                              color:
-                                currentScan?.findings?.filter((f) => f.scanner_name === 'osv-scanner').length > 0
-                                  ? '#c084fc'
-                                  : '#34d399'
-                            }}
-                          >
-                            {currentScan?.findings?.filter((f) => f.scanner_name === 'osv-scanner').length || 0} CVEs
-                          </strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ color: '#cbd5e1' }}>Access Control Checks</span>
-                          <strong style={{ color: '#38bdf8' }}>Grounded Analysis</strong>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 3: Real-Time Threats */}
-                    <div
-                      className="card-stat"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        paddingBottom: '0.5rem'
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
-                          Real-time Threats
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '2.5rem',
-                            fontWeight: '800',
-                            color: '#ffffff',
-                            marginTop: '0.2rem',
-                            lineHeight: '1'
-                          }}
-                        >
-                          {currentScan ? currentScan.total_findings : 0}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                          active flaws in analyzed code
-                        </div>
-                      </div>
-
-                      {/* Sparkline wave */}
-                      <div style={{ marginTop: '0.5rem' }}>
-                        <svg
-                          viewBox="0 0 200 45"
-                          style={{ width: '100%', height: '40px', overflow: 'visible' }}
-                        >
-                          <defs>
-                            <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
-                              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          <path
-                            d="M 0 35 Q 35 15, 70 30 T 140 10 T 200 25 L 200 45 L 0 45 Z"
-                            fill="url(#waveGrad)"
-                          />
-                          <path
-                            d="M 0 35 Q 35 15, 70 30 T 140 10 T 200 25"
-                            fill="none"
-                            stroke="#8b5cf6"
-                            strokeWidth="2.5"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Rescan Comparison (when triggered) */}
-                  {showRescanDiff && previousScan && currentScan && (
-                    <div style={{ marginBottom: '2rem' }}>
-                      <RescanComparison
-                        originalScan={previousScan}
-                        rescanScan={currentScan}
-                        onDismiss={() => setShowRescanDiff(false)}
-                      />
                     </div>
                   )}
 
-                  {/* Upload Dropzone */}
-                  <div style={{ marginBottom: '2rem' }}>
-                    <UploadZone onFileUpload={handleFileUpload} scanning={scanning} />
-                  </div>
-
-                  {/* Findings Table */}
+                  {/* STATE 2: AFTER FILE UPLOAD (Results & Findings displayed according to uploaded code) */}
                   {currentScan && (
-                    <FindingsTable
-                      findings={currentScan.findings || []}
-                      onSelectFinding={setSelectedFinding}
-                      selectedFindingId={selectedFinding?.id}
-                    />
+                    <div>
+                      {/* Top Action Bar */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '1.5rem',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          padding: '0.75rem 1.25rem',
+                          borderRadius: '0.75rem',
+                          border: '1px solid rgba(255, 255, 255, 0.08)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
+                          <FileCode size={18} color="#818cf8" />
+                          <span>
+                            Scanned Archive: <strong style={{ color: '#ffffff' }}>{currentScan.filename}</strong>
+                          </span>
+                          <span style={{ color: '#64748b' }}>|</span>
+                          <span style={{ color: currentScan.total_findings === 0 ? '#34d399' : '#f87171', fontWeight: 600 }}>
+                            {currentScan.total_findings} findings detected
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setCurrentScan(null);
+                            setActiveScenario('awaiting');
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: '#94a3b8',
+                            padding: '0.4rem 0.85rem',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.775rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+                        >
+                          <RefreshCw size={13} />
+                          <span>Scan Another Codebase</span>
+                        </button>
+                      </div>
+
+                      {/* 3 Metric Cards Row (Real counts from uploaded file) */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                          gap: '1.25rem',
+                          marginBottom: '2rem'
+                        }}
+                      >
+                        {/* Card 1: Security Score */}
+                        <div className="card-stat">
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              marginBottom: '0.75rem'
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
+                                Security Posture Score
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '1.75rem',
+                                  fontWeight: '800',
+                                  color: scoreColor,
+                                  marginTop: '0.25rem'
+                                }}
+                              >
+                                {Math.round(currentScan.score)}{' '}
+                                <span style={{ fontSize: '0.9rem', color: '#64748b' }}>/ 100</span>
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Posture Status</div>
+                              <div
+                                style={{
+                                  fontSize: '0.85rem',
+                                  fontWeight: '700',
+                                  color: currentScan.score >= 80 ? '#34d399' : '#f87171',
+                                  marginTop: '0.25rem'
+                                }}
+                              >
+                                {currentScan.score >= 80 ? '✓ Verified Secure' : '⚠️ Action Required'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '6px',
+                              background: 'rgba(255, 255, 255, 0.08)',
+                              borderRadius: '9999px',
+                              overflow: 'hidden',
+                              marginTop: '1.25rem'
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${Math.max(5, currentScan.score)}%`,
+                                height: '100%',
+                                background: `linear-gradient(90deg, ${scoreColor}, #6366f1)`,
+                                borderRadius: '9999px',
+                                boxShadow: `0 0 10px ${scoreColor}`
+                              }}
+                            />
+                          </div>
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              fontSize: '0.725rem',
+                              color: '#64748b',
+                              marginTop: '0.5rem'
+                            }}
+                          >
+                            <span>Target: {currentScan.filename}</span>
+                            <span>{currentScan.total_findings} Flaws Detected</span>
+                          </div>
+                        </div>
+
+                        {/* Card 2: Vulnerability Summary */}
+                        <div className="card-stat">
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: '0.75rem'
+                            }}
+                          >
+                            <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
+                              Severity Breakdown
+                            </div>
+                            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                              {currentScan.scan_duration_ms ? `${currentScan.scan_duration_ms}ms` : 'AST Scanners'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.8rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ color: '#cbd5e1' }}>Critical Severity</span>
+                              <strong style={{ color: currentScan.critical_count > 0 ? '#f87171' : '#34d399' }}>
+                                {currentScan.critical_count} Critical
+                              </strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ color: '#cbd5e1' }}>High Severity</span>
+                              <strong style={{ color: currentScan.high_count > 0 ? '#fb923c' : '#34d399' }}>
+                                {currentScan.high_count} High
+                              </strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ color: '#cbd5e1' }}>Medium Severity</span>
+                              <strong style={{ color: currentScan.medium_count > 0 ? '#eab308' : '#34d399' }}>
+                                {currentScan.medium_count} Medium
+                              </strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ color: '#cbd5e1' }}>Low / Informational</span>
+                              <strong style={{ color: '#94a3b8' }}>{currentScan.low_count} Low</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card 3: Multi-Engine Findings */}
+                        <div
+                          className="card-stat"
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600', marginBottom: '0.75rem' }}>
+                              Engine Breakdown
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.8rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: '#38bdf8' }}>Semgrep AST Rules</span>
+                                <strong style={{ color: '#ffffff' }}>
+                                  {currentScan.findings?.filter((f) => f.scanner_name === 'semgrep').length || 0}
+                                </strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: '#f97316' }}>Gitleaks Secrets</span>
+                                <strong style={{ color: '#ffffff' }}>
+                                  {currentScan.findings?.filter((f) => f.scanner_name === 'gitleaks').length || 0}
+                                </strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: '#a855f7' }}>OSV-Scanner CVEs</span>
+                                <strong style={{ color: '#ffffff' }}>
+                                  {currentScan.findings?.filter((f) => f.scanner_name === 'osv-scanner').length || 0}
+                                </strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)', fontSize: '0.75rem', color: '#64748b' }}>
+                            IBM Granite Review Ready
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Rescan Comparison (when triggered) */}
+                      {showRescanDiff && previousScan && currentScan && (
+                        <div style={{ marginBottom: '2rem' }}>
+                          <RescanComparison
+                            originalScan={previousScan}
+                            rescanScan={currentScan}
+                            onDismiss={() => setShowRescanDiff(false)}
+                          />
+                        </div>
+                      )}
+
+                      {/* Zero Findings Clean State Card */}
+                      {currentScan.total_findings === 0 && (
+                        <div
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.08)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: '1rem',
+                            padding: '2.5rem 1.5rem',
+                            textAlign: 'center',
+                            marginBottom: '1rem'
+                          }}
+                        >
+                          <CheckCircle2 size={42} color="#10b981" style={{ margin: '0 auto 0.75rem' }} />
+                          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34d399', marginBottom: '0.35rem' }}>
+                            Zero Vulnerabilities Detected!
+                          </h3>
+                          <p style={{ fontSize: '0.875rem', color: '#94a3b8', maxWidth: '500px', margin: '0 auto 1.25rem' }}>
+                            Static AST analysis, secret entropy scanning, and dependency CVE checks all passed clean with score 100/100.
+                          </p>
+                          <button
+                            onClick={() => {
+                              setCurrentScan(null);
+                              setActiveScenario('awaiting');
+                            }}
+                            className="btn btn-primary"
+                            style={{ padding: '0.5rem 1.25rem', fontSize: '0.825rem' }}
+                          >
+                            Scan Another Project
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Findings Table (Populated with findings from this uploaded file) */}
+                      {currentScan.total_findings > 0 && (
+                        <FindingsTable
+                          findings={currentScan.findings || []}
+                          onSelectFinding={setSelectedFinding}
+                          selectedFindingId={selectedFinding?.id}
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -873,6 +997,8 @@ export default function App() {
                           onClick={() => {
                             if (currentScan?.findings?.[0]) {
                               setSelectedFinding(currentScan.findings[0]);
+                            } else {
+                              handleSampleLoad('vulnerable');
                             }
                           }}
                           className="btn btn-primary"
