@@ -27,12 +27,14 @@ async def upload_and_scan(
     Accepts a ZIP project upload, validates against directory traversal & bombs,
     extracts to an isolated sandbox, runs deterministic scanners, and returns findings.
     """
-    if not file.filename.endswith(".zip"):
-        raise HTTPException(status_code=400, detail="Only .zip archive files are permitted.")
+    valid_extensions = (".zip", ".py", ".js", ".ts", ".json", ".txt", ".sh")
+    if not any(file.filename.endswith(ext) for ext in valid_extensions):
+        raise HTTPException(status_code=400, detail="Only .zip archive files or source files (.py, .js, .ts) are permitted.")
 
     scan_id = str(uuid.uuid4())
     upload_file_path = settings.UPLOAD_DIR / f"{scan_id}_{file.filename}"
     extract_target_dir = settings.EXTRACT_DIR / scan_id
+    extract_target_dir.mkdir(parents=True, exist_ok=True)
 
     # Save uploaded bytes safely
     try:
@@ -41,16 +43,22 @@ async def upload_and_scan(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save uploaded file: {str(e)}")
 
-    # Validate archive and extract
-    try:
-        ZipValidator.validate_and_extract(upload_file_path, extract_target_dir)
-    except UnsafeArchiveError as ue:
-        # Cleanup if validation fails
-        if upload_file_path.exists():
-            upload_file_path.unlink()
-        if extract_target_dir.exists():
-            shutil.rmtree(extract_target_dir, ignore_errors=True)
-        raise HTTPException(status_code=400, detail=f"Archive validation rejected: {str(ue)}")
+    # Validate archive and extract, or copy single code file
+    if file.filename.endswith(".zip"):
+        try:
+            ZipValidator.validate_and_extract(upload_file_path, extract_target_dir)
+        except UnsafeArchiveError as ue:
+            # Cleanup if validation fails
+            if upload_file_path.exists():
+                upload_file_path.unlink()
+            if extract_target_dir.exists():
+                shutil.rmtree(extract_target_dir, ignore_errors=True)
+            raise HTTPException(status_code=400, detail=f"Archive validation rejected: {str(ue)}")
+    else:
+        # Single code file: place safely into extract target directory
+        safe_name = Path(file.filename).name
+        dest_file = extract_target_dir / safe_name
+        shutil.copyfile(upload_file_path, dest_file)
 
     # Execute deterministic scanners
     try:
