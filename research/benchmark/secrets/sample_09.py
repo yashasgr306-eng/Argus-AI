@@ -1,0 +1,1 @@
+CLIENT_SECRET = "cs_live_sec_abcdef9876543210"

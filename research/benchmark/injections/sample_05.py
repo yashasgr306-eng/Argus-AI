@@ -1,0 +1,1 @@
+result = eval(math_expr)

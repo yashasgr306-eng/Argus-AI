@@ -1,0 +1,1 @@
+cursor.execute("DELETE FROM orders WHERE user = %s" % order_user)

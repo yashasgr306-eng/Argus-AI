@@ -1,0 +1,1 @@
+os.system(f"cat /var/log/{log_name}")

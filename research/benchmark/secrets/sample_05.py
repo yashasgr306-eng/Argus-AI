@@ -1,0 +1,1 @@
+GITHUB_TOKEN = "ghp_mock_token_1234567890abcdefghijklmnopqrstuvwxyz"

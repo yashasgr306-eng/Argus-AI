@@ -1,0 +1,1 @@
+exec(untrusted_code)

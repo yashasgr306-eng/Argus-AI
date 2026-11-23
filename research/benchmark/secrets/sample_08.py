@@ -1,0 +1,1 @@
+DATABASE_URL = "postgres://admin:secretpass123@db.example.com:5432/production"

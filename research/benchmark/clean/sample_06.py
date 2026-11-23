@@ -1,0 +1,1 @@
+cursor.execute("UPDATE users SET name = :name WHERE id = :id", {"name": name, "id": uid})

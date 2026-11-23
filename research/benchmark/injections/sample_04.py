@@ -1,0 +1,1 @@
+subprocess.Popen(f"traceroute {target}", shell=True)

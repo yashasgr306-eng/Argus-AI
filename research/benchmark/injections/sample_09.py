@@ -1,0 +1,1 @@
+subprocess.run("ls -l " + directory, shell=True)

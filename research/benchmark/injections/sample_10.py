@@ -1,0 +1,1 @@
+cursor.execute("UPDATE profiles SET bio =  + bio +  WHERE id = 1")

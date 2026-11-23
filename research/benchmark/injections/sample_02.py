@@ -1,0 +1,1 @@
+cursor.execute(f"SELECT * FROM accounts WHERE acc_id = {account_id}")

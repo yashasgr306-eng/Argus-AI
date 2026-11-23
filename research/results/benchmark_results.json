@@ -1,0 +1,45 @@
+{
+  "research_question": "Does adding an evidence-grounded AI review agent to traditional static-analysis findings improve the clarity and usefulness of remediation guidance without increasing unsupported recommendations?",
+  "total_samples": 40,
+  "precision": 0.857,
+  "recall": 0.6,
+  "false_positive_count": 3,
+  "actionability_rating": 4.8,
+  "fix_verification_rate": 1.0,
+  "categories": [
+    {
+      "category": "Hard-coded Secrets",
+      "total_samples": 10,
+      "detected_count": 7,
+      "precision": 1.0,
+      "recall": 0.7,
+      "false_positives": 0
+    },
+    {
+      "category": "Injection Patterns",
+      "total_samples": 10,
+      "detected_count": 9,
+      "precision": 1.0,
+      "recall": 0.9,
+      "false_positives": 0
+    },
+    {
+      "category": "Missing Access Checks",
+      "total_samples": 10,
+      "detected_count": 2,
+      "precision": 1.0,
+      "recall": 0.2,
+      "false_positives": 0
+    },
+    {
+      "category": "Clean / Control Examples",
+      "total_samples": 10,
+      "detected_count": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "false_positives": 3
+    }
+  ],
+  "agent_rubric_summary": "Evaluated across clarity, evidence grounding, and actionability on a 1-5 scale. Mean score: 4.8/5.00. 0% hallucinated scanner rules; 100% secret redaction compliance.",
+  "limitations": "A 40-sample benchmark is a small hackathon experiment, not proof of production-grade performance. It establishes baseline empirical validity for AI code review actionability."
+}

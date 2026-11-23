@@ -1,0 +1,1 @@
+JWT_SECRET = "super_jwt_secret_signing_key_xyz"

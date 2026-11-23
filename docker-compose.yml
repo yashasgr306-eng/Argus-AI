@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  argus-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: argus-ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - WATSONX_API_KEY=${WATSONX_API_KEY:-}
+      - WATSONX_PROJECT_ID=${WATSONX_PROJECT_ID:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+    volumes:
+      - argus_data:/app/backend/data
+    restart: unless-stopped
+
+volumes:
+  argus_data:
+

@@ -1,0 +1,322 @@
+[
+  {
+    "id": "sec_01",
+    "category": "secrets",
+    "file": "secrets/sample_01.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.aws-access-key",
+    "description": "AWS Access Key exposed in code"
+  },
+  {
+    "id": "sec_02",
+    "category": "secrets",
+    "file": "secrets/sample_02.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.hardcoded-jwt-secret",
+    "description": "Hardcoded JWT secret"
+  },
+  {
+    "id": "sec_03",
+    "category": "secrets",
+    "file": "secrets/sample_03.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.stripe-secret-key",
+    "description": "Stripe Live Secret Key exposed"
+  },
+  {
+    "id": "sec_04",
+    "category": "secrets",
+    "file": "secrets/sample_04.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.hardcoded-password",
+    "description": "Plaintext database password"
+  },
+  {
+    "id": "sec_05",
+    "category": "secrets",
+    "file": "secrets/sample_05.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.generic-api-key",
+    "description": "GitHub Personal Access Token"
+  },
+  {
+    "id": "sec_06",
+    "category": "secrets",
+    "file": "secrets/sample_06.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.generic-api-key",
+    "description": "Slack Bot Token hardcoded"
+  },
+  {
+    "id": "sec_07",
+    "category": "secrets",
+    "file": "secrets/sample_07.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.generic-api-key",
+    "description": "Generic API Key defined directly in config"
+  },
+  {
+    "id": "sec_08",
+    "category": "secrets",
+    "file": "secrets/sample_08.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.hardcoded-password",
+    "description": "Database URI with credentials"
+  },
+  {
+    "id": "sec_09",
+    "category": "secrets",
+    "file": "secrets/sample_09.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.generic-api-key",
+    "description": "Client OAuth Secret hardcoded"
+  },
+  {
+    "id": "sec_10",
+    "category": "secrets",
+    "file": "secrets/sample_10.py",
+    "is_vulnerable": true,
+    "expected_rule": "gitleaks.rule.private-key",
+    "description": "Private RSA key file embedded in source"
+  },
+  {
+    "id": "inj_01",
+    "category": "injections",
+    "file": "injections/sample_01.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.sql-injection-raw-query",
+    "description": "SQL Injection concatenation"
+  },
+  {
+    "id": "inj_02",
+    "category": "injections",
+    "file": "injections/sample_02.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.sql-injection-raw-query",
+    "description": "SQL Injection f-string"
+  },
+  {
+    "id": "inj_03",
+    "category": "injections",
+    "file": "injections/sample_03.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.lang.security.dangerous-command-injection",
+    "description": "Command Injection via os.system"
+  },
+  {
+    "id": "inj_04",
+    "category": "injections",
+    "file": "injections/sample_04.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.lang.security.dangerous-command-injection",
+    "description": "Command Injection shell=True"
+  },
+  {
+    "id": "inj_05",
+    "category": "injections",
+    "file": "injections/sample_05.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.lang.security.eval-code-execution",
+    "description": "Code Injection via eval()"
+  },
+  {
+    "id": "inj_06",
+    "category": "injections",
+    "file": "injections/sample_06.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.lang.security.eval-code-execution",
+    "description": "Code Execution via exec()"
+  },
+  {
+    "id": "inj_07",
+    "category": "injections",
+    "file": "injections/sample_07.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.sql-injection-raw-query",
+    "description": "SQL Injection string modulo %"
+  },
+  {
+    "id": "inj_08",
+    "category": "injections",
+    "file": "injections/sample_08.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.lang.security.dangerous-command-injection",
+    "description": "Command Injection f-string"
+  },
+  {
+    "id": "inj_09",
+    "category": "injections",
+    "file": "injections/sample_09.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.lang.security.dangerous-command-injection",
+    "description": "Subprocess command injection"
+  },
+  {
+    "id": "inj_10",
+    "category": "injections",
+    "file": "injections/sample_10.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.sql-injection-raw-query",
+    "description": "SQL Injection update query"
+  },
+  {
+    "id": "acc_01",
+    "category": "access_checks",
+    "file": "access_checks/sample_01.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Missing auth on admin reset endpoint"
+  },
+  {
+    "id": "acc_02",
+    "category": "access_checks",
+    "file": "access_checks/sample_02.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Missing auth on user deletion endpoint"
+  },
+  {
+    "id": "acc_03",
+    "category": "access_checks",
+    "file": "access_checks/sample_03.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Unprotected internal endpoint"
+  },
+  {
+    "id": "acc_04",
+    "category": "access_checks",
+    "file": "access_checks/sample_04.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Missing authorization on role escalation"
+  },
+  {
+    "id": "acc_05",
+    "category": "access_checks",
+    "file": "access_checks/sample_05.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Unauthenticated audit logs endpoint"
+  },
+  {
+    "id": "acc_06",
+    "category": "access_checks",
+    "file": "access_checks/sample_06.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Unprotected restart endpoint"
+  },
+  {
+    "id": "acc_07",
+    "category": "access_checks",
+    "file": "access_checks/sample_07.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Unrestricted destructive table drop"
+  },
+  {
+    "id": "acc_08",
+    "category": "access_checks",
+    "file": "access_checks/sample_08.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Unprotected secret export API"
+  },
+  {
+    "id": "acc_09",
+    "category": "access_checks",
+    "file": "access_checks/sample_09.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Missing auth on maintenance toggle"
+  },
+  {
+    "id": "acc_10",
+    "category": "access_checks",
+    "file": "access_checks/sample_10.py",
+    "is_vulnerable": true,
+    "expected_rule": "python.fastapi.security.missing-access-control-admin",
+    "description": "Unprotected key rotation endpoint"
+  },
+  {
+    "id": "cln_01",
+    "category": "clean",
+    "file": "clean/sample_01.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Environment variable for API key"
+  },
+  {
+    "id": "cln_02",
+    "category": "clean",
+    "file": "clean/sample_02.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Parameterized SQL query"
+  },
+  {
+    "id": "cln_03",
+    "category": "clean",
+    "file": "clean/sample_03.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Safe subprocess argument list without shell"
+  },
+  {
+    "id": "cln_04",
+    "category": "clean",
+    "file": "clean/sample_04.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Authenticated admin endpoint with Depends"
+  },
+  {
+    "id": "cln_05",
+    "category": "clean",
+    "file": "clean/sample_05.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: SHA-256 secure hash"
+  },
+  {
+    "id": "cln_06",
+    "category": "clean",
+    "file": "clean/sample_06.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Named parameter binding"
+  },
+  {
+    "id": "cln_07",
+    "category": "clean",
+    "file": "clean/sample_07.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Safe YAML loading"
+  },
+  {
+    "id": "cln_08",
+    "category": "clean",
+    "file": "clean/sample_08.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Environment variable AWS key"
+  },
+  {
+    "id": "cln_09",
+    "category": "clean",
+    "file": "clean/sample_09.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Path traversal sanitized filename"
+  },
+  {
+    "id": "cln_10",
+    "category": "clean",
+    "file": "clean/sample_10.py",
+    "is_vulnerable": false,
+    "expected_rule": null,
+    "description": "Clean: Superuser guarded endpoint"
+  }
+]
