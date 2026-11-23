@@ -1,5 +1,6 @@
 import uuid
 import shutil
+import httpx
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -12,6 +13,7 @@ from app.models import Scan, Finding
 from app.schemas import ScanResponse, FindingResponse, RescanRequest
 from app.services.zip_validator import ZipValidator, UnsafeArchiveError
 from app.services.scanner_orchestrator import ScannerOrchestrator
+from app.services.sample_projects_data import get_sample_files
 
 router = APIRouter(prefix="/api", tags=["Scans"])
 orchestrator = ScannerOrchestrator()
@@ -180,18 +182,41 @@ def scan_demo_sample(sample_type: str):
     """
     1-Click Demo Scanner: Scans 'vulnerable' or 'clean' sample projects
     for instant live testing without manual file uploads.
+    Integrates with Vercel service bindings (CLEAN_SERVICE_URL / VULNERABLE_SERVICE_URL).
     """
-    sample_dir = Path(__file__).resolve().parent.parent.parent.parent / "sample-projects" / sample_type
-    if not sample_dir.exists():
-        # Fallback location check
-        sample_dir = Path("/Users/yashasg.r/.gemini/antigravity/scratch/secureship-ai/sample-projects") / sample_type
+    # 1. If running under Vercel Services with internal bindings, verify live service connectivity
+    target_service_url = settings.CLEAN_SERVICE_URL if sample_type == "clean" else (
+        settings.VULNERABLE_SERVICE_URL if sample_type == "vulnerable" else None
+    )
+    if target_service_url:
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get(f"{target_service_url.rstrip('/')}/health")
+                if resp.status_code == 200:
+                    print(f"[Vercel Binding] Successfully contacted internal service '{sample_type}' at {target_service_url}")
+        except Exception as e:
+            print(f"[Vercel Binding] Notice: Internal service '{sample_type}' at {target_service_url} ping check: {e}")
 
-    if not sample_dir.exists():
-        raise HTTPException(status_code=404, detail=f"Sample project '{sample_type}' not found.")
-
+    # 2. Extract or populate sample files to isolated directory for deterministic scanning
     scan_id = str(uuid.uuid4())
     dest_dir = settings.EXTRACT_DIR / scan_id
-    shutil.copytree(sample_dir, dest_dir)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    sample_dir = Path(__file__).resolve().parent.parent.parent.parent / "sample-projects" / sample_type
+    if not sample_dir.exists():
+        sample_dir = Path("/Users/yashasg.r/.gemini/antigravity/scratch/secureship-ai/sample-projects") / sample_type
+
+    if sample_dir.exists():
+        shutil.copytree(sample_dir, dest_dir, dirs_exist_ok=True)
+    else:
+        # Fallback for serverless environments where sibling directories are isolated
+        sample_files = get_sample_files(sample_type)
+        if not sample_files:
+            raise HTTPException(status_code=404, detail=f"Sample project '{sample_type}' not found.")
+        for rel_filename, content in sample_files.items():
+            target_file = dest_dir / rel_filename
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+            target_file.write_text(content, encoding="utf-8")
 
     with SyncSessionLocal() as sync_db:
         scan_record = orchestrator.execute_and_persist_scan(
@@ -221,6 +246,8 @@ def scan_demo_sample(sample_type: str):
 def download_project_zip():
     """Provides downloadable ZIP containing the complete project code."""
     zip_path = Path("/Users/yashasg.r/.gemini/antigravity/scratch/argus-ai-complete.zip")
+    if not zip_path.exists():
+        zip_path = Path(__file__).resolve().parent.parent.parent.parent / "argus-ai-complete.zip"
     if not zip_path.exists():
         zip_path = Path("/Users/yashasg.r/.gemini/antigravity/scratch/secureship-ai-complete.zip")
     if not zip_path.exists():

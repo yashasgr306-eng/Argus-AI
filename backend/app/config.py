@@ -4,7 +4,18 @@ from typing import Set
 from pydantic import BaseModel, ConfigDict, Field
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+
+# Detect Vercel / serverless environment where root filesystem is read-only
+is_serverless = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+if is_serverless:
+    DATA_DIR = Path("/tmp/argus_data")
+else:
+    try:
+        DATA_DIR = BASE_DIR / "data"
+        DATA_DIR.mkdir(exist_ok=True, parents=True)
+    except (PermissionError, OSError):
+        DATA_DIR = Path("/tmp/argus_data")
+
 DATA_DIR.mkdir(exist_ok=True, parents=True)
 
 UPLOAD_DIR = DATA_DIR / "uploads"
@@ -47,5 +58,9 @@ class Settings(BaseModel):
 
     # Google OAuth Configuration
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+
+    # Vercel Internal Service Bindings
+    CLEAN_SERVICE_URL: str = os.getenv("CLEAN_SERVICE_URL", "")
+    VULNERABLE_SERVICE_URL: str = os.getenv("VULNERABLE_SERVICE_URL", "")
 
 settings = Settings()

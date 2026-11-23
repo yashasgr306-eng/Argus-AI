@@ -5,6 +5,10 @@ from fastapi import FastAPI, Request
 
 app = FastAPI(title="VibeCoded AI Store - Vulnerable Demo")
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "vulnerable"}
+
 # 1. Hardcoded Secret (Gitleaks target)
 JWT_SECRET = "super_secret_jwt_key_9876543210_vulnerable"
 AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"

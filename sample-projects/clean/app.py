@@ -8,6 +8,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 app = FastAPI(title="VibeCoded AI Store - Remediated Clean Demo")
 security = HTTPBearer()
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "clean"}
+
 # 1. Environment-based secret loading (Remediated Gitleaks)
 JWT_SECRET = os.getenv("JWT_SECRET")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")

@@ -136,6 +136,10 @@ export const FALLBACK_CLEAN_SCAN = {
 
 export async function checkHealth() {
   try {
+    const res = await fetch(`${API_BASE}/health`);
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  try {
     const res = await fetch('/health');
     if (res.ok) return await res.json();
   } catch (e) {}

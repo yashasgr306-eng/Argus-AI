@@ -37,6 +37,7 @@ app.include_router(research.router)
 app.include_router(auth.router)
 
 @app.get("/health")
+@app.get("/api/health")
 def health_check():
     """Health check endpoint required by roadmap checkpoint."""
     return {

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "fastapi",
+      "entrypoint": "main.py",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "clean",
+          "format": "url",
+          "env": "CLEAN_SERVICE_URL"
+        },
+        {
+          "type": "service",
+          "service": "vulnerable",
+          "format": "url",
+          "env": "VULNERABLE_SERVICE_URL"
+        }
+      ]
+    },
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite"
+    },
+    "clean": {
+      "root": "sample-projects/clean",
+      "framework": "fastapi",
+      "entrypoint": "main.py"
+    },
+    "vulnerable": {
+      "root": "sample-projects/vulnerable",
+      "framework": "fastapi",
+      "entrypoint": "main.py"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
+}
