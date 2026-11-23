@@ -5,7 +5,6 @@ import FindingsTable from './components/FindingsTable';
 import FindingDetailModal from './components/FindingDetailModal';
 import RescanComparison from './components/RescanComparison';
 import ResearchBenchmarkView from './components/ResearchBenchmarkView';
-import DemoScriptView from './components/DemoScriptView';
 import {
   uploadAndScan,
   scanDemoSample,
@@ -35,16 +34,26 @@ export default function App() {
 
   useEffect(() => {
     getAgentStatus().then(setAgentStatus).catch(console.error);
+    const savedUser = localStorage.getItem('ARGUS_AUTH_USER');
+    if (savedUser) {
+      try { setCurrentUser(JSON.parse(savedUser)); } catch (e) {}
+    }
     getCurrentUser().then(user => {
-      if (user) setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
+        localStorage.setItem('ARGUS_AUTH_USER', JSON.stringify(user));
+      }
     }).catch(console.warn);
     handleSampleLoad('vulnerable');
   }, []);
 
   const handleGoogleLogin = async (credentialResponse) => {
     try {
-      const user = await loginWithGoogle(credentialResponse?.credential || null);
-      setCurrentUser(user);
+      const user = await loginWithGoogle(credentialResponse || null);
+      if (user) {
+        setCurrentUser(user);
+        localStorage.setItem('ARGUS_AUTH_USER', JSON.stringify(user));
+      }
     } catch (err) {
       console.error('Google Sign-In failed:', err);
       setErrorMsg(`Google Sign-In error: ${err.message || 'Verification failed'}`);
@@ -57,6 +66,7 @@ export default function App() {
     } catch (err) {
       console.warn('Logout API error:', err);
     }
+    localStorage.removeItem('ARGUS_AUTH_USER');
     setCurrentUser(null);
   };
 
@@ -184,8 +194,8 @@ export default function App() {
                   color: '#ffffff',
                   marginBottom: '1.5rem'
                 }}>
-                  Smarter Workflows<br />
-                  Start with <span className="hero-brand-script">ARGUS</span>
+                  AI-Powered Security Auditor<br />
+                  for <span className="hero-brand-script">AI-Generated Code</span>
                 </h1>
 
                 {/* Subtitle */}
@@ -571,7 +581,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Right: Pitch Copy */}
+                  {/* Right: Research Summary */}
                   <div>
                     <h2 style={{
                       fontSize: 'clamp(2rem, 3.5vw, 2.75rem)',
@@ -581,32 +591,24 @@ export default function App() {
                       lineHeight: '1.2',
                       marginBottom: '1.25rem'
                     }}>
-                      See ARGUS in Action:<br />
+                      Evidence-Grounded AI Reviews<br />
                       <span className="hero-brand-script" style={{ fontSize: 'clamp(2.4rem, 4vw, 3.25rem)' }}>
-                        Watch Our Tools Shine
+                        Built on Empirical Research
                       </span>
                     </h2>
 
                     <p style={{ fontSize: '1rem', color: '#94a3b8', lineHeight: '1.65', marginBottom: '2rem' }}>
-                      Watch the IBM-powered Security Review Agent turn raw static analysis findings into verified fixes in under a minute. You'll watch workflows automated, secrets redacted in real time, and rescan verification eliminate vulnerabilities—no coding complexity, no hallucinations.
+                      ARGUS evaluates AI-generated code against 40 real-world benchmark samples. Every finding pairs deterministic static rules with grounded IBM Granite remediation guidance and automated rescan verification.
                     </p>
 
                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                       <button
-                        onClick={() => setActiveTab('demo')}
+                        onClick={() => setActiveTab('research')}
                         className="btn btn-white-pill"
                         style={{ padding: '0.65rem 1.5rem', fontSize: '0.85rem' }}
                       >
-                        <span>View 3-Min Pitch Script</span>
-                        <ArrowRight size={14} />
-                      </button>
-
-                      <button
-                        onClick={() => setActiveTab('research')}
-                        className="btn btn-secondary"
-                        style={{ padding: '0.65rem 1.5rem', fontSize: '0.85rem' }}
-                      >
                         <span>Inspect 40 Benchmarks</span>
+                        <ArrowRight size={14} />
                       </button>
                     </div>
                   </div>
@@ -622,18 +624,6 @@ export default function App() {
         {activeTab === 'research' && (
           <div className="container" style={{ paddingTop: '2.5rem' }}>
             <ResearchBenchmarkView />
-          </div>
-        )}
-
-        {/* Tab 3: 3-Minute Demo Script View */}
-        {activeTab === 'demo' && (
-          <div className="container" style={{ paddingTop: '2.5rem' }}>
-            <DemoScriptView
-              onTriggerStep={(stepType) => {
-                setActiveTab('auditor');
-                handleSampleLoad(stepType);
-              }}
-            />
           </div>
         )}
 

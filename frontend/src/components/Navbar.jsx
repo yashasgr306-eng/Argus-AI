@@ -87,30 +87,9 @@ export default function Navbar({ activeTab, setActiveTab, agentStatus, user, onL
             <Database size={14} />
             Benchmark (40)
           </button>
-
-          <button
-            onClick={() => setActiveTab('demo')}
-            style={{
-              padding: '0.45rem 1rem',
-              fontSize: '0.825rem',
-              fontWeight: '600',
-              borderRadius: '9999px',
-              border: 'none',
-              cursor: 'pointer',
-              background: activeTab === 'demo' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
-              color: activeTab === 'demo' ? '#c7d2fe' : '#94a3b8',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-          >
-            <FileText size={14} />
-            Pitch Script
-          </button>
         </nav>
 
-        {/* Right Actions: Status + Google Auth + CTA */}
+        {/* Right Actions: Status + Google Auth */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           
           {/* IBM Agent Status Badge */}
@@ -142,16 +121,6 @@ export default function Navbar({ activeTab, setActiveTab, agentStatus, user, onL
             onLogin={onLogin}
             onLogout={onLogout}
           />
-
-          {/* Scan Code CTA */}
-          <button
-            onClick={() => setActiveTab('auditor')}
-            className="btn btn-primary"
-            style={{ padding: '0.5rem 1.15rem', fontSize: '0.825rem', borderRadius: '9999px' }}
-          >
-            <span>Scan Code</span>
-            <ArrowRight size={14} />
-          </button>
 
         </div>
 
