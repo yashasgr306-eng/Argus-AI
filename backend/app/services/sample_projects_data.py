@@ -106,9 +106,9 @@ def hash_user_password(password: str) -> str:
     return hashlib.md5(password.encode()).hexdigest()
 """
 
-VULNERABLE_REQUIREMENTS_TXT = """fastapi==0.110.0
+VULNERABLE_REQUIREMENTS_TXT = """fastapi>=0.110.0
 requests==2.19.1
-urllib3==1.24.1
+urllib3==1.23
 """
 
 def get_sample_files(sample_type: str) -> Optional[Dict[str, str]]:
@@ -123,3 +123,4 @@ def get_sample_files(sample_type: str) -> Optional[Dict[str, str]]:
             "requirements.txt": VULNERABLE_REQUIREMENTS_TXT
         }
     return None
+

@@ -77,9 +77,9 @@ export const FALLBACK_VULNERABLE_SCAN = {
       rule_id: "osv.CVE-2019-11324",
       file_path: "requirements.txt",
       line_number: 3,
-      message: "Dependency urllib3@1.24.1 has known vulnerability CVE-2019-11324.",
-      code_snippet: "urllib3==1.24.1",
-      masked_evidence: "urllib3==1.24.1",
+      message: "Dependency urllib3@1.23 has known vulnerability CVE-2019-11324.",
+      code_snippet: "urllib3==1.23",
+      masked_evidence: "urllib3==1.23",
       review: null
     },
     {
@@ -89,9 +89,9 @@ export const FALLBACK_VULNERABLE_SCAN = {
       rule_id: "osv.CVE-2021-33503",
       file_path: "requirements.txt",
       line_number: 3,
-      message: "Dependency urllib3@1.24.1 has known vulnerability CVE-2021-33503.",
-      code_snippet: "urllib3==1.24.1",
-      masked_evidence: "urllib3==1.24.1",
+      message: "Dependency urllib3@1.23 has known vulnerability CVE-2021-33503.",
+      code_snippet: "urllib3==1.23",
+      masked_evidence: "urllib3==1.23",
       review: null
     },
     {
