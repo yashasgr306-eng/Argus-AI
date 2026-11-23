@@ -18,7 +18,17 @@ def init_db():
 def init_sync_db():
     Base.metadata.create_all(bind=engine)
 
+# Auto-initialize database schema immediately for serverless/cold-start environments
+try:
+    init_sync_db()
+except Exception as _e:
+    pass
+
 def get_db():
+    try:
+        init_sync_db()
+    except Exception:
+        pass
     db = SessionLocal()
     try:
         yield db

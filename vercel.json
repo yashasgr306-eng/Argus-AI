@@ -4,7 +4,7 @@
     "backend": {
       "root": "backend",
       "framework": "fastapi",
-      "entrypoint": "main.py",
+      "entrypoint": "main:app",
       "bindings": [
         {
           "type": "service",
@@ -22,17 +22,19 @@
     },
     "frontend": {
       "root": "frontend",
-      "framework": "vite"
+      "framework": "vite",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist"
     },
     "clean": {
       "root": "sample-projects/clean",
       "framework": "fastapi",
-      "entrypoint": "main.py"
+      "entrypoint": "main:app"
     },
     "vulnerable": {
       "root": "sample-projects/vulnerable",
       "framework": "fastapi",
-      "entrypoint": "main.py"
+      "entrypoint": "main:app"
     }
   },
   "rewrites": [

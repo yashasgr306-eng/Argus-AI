@@ -30,6 +30,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def ensure_api_prefix_middleware(request, call_next):
+    """
+    Ensures API routes match whether Vercel preserves or strips the /api prefix
+    when routing requests to the backend service.
+    """
+    path = request.scope.get("path", "")
+    if not path.startswith("/api") and not path.startswith("/health") and not path.startswith("/docs") and not path.startswith("/openapi.json"):
+        for prefix in ("/agent", "/scan", "/scans", "/research", "/auth"):
+            if path.startswith(prefix):
+                request.scope["path"] = f"/api{path}"
+                break
+    return await call_next(request)
+
 # Register API routers
 app.include_router(scan.router)
 app.include_router(agent.router)
