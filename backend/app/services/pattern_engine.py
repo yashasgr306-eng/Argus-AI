@@ -163,9 +163,11 @@ class PatternEngine:
     VULNERABLE_PACKAGES = {
         "python": {
             "requests": [
+                {"max_version": "2.30.0", "cve": "CVE-2023-32681", "severity": "HIGH", "message": "Unintended leak of Proxy-Authorization header during cross-origin redirect."},
                 {"max_version": "2.20.0", "cve": "CVE-2018-18074", "severity": "HIGH", "message": "Redirect vulnerability exposes Authorization headers to third-party domains."}
             ],
             "urllib3": [
+                {"max_version": "1.26.17", "cve": "CVE-2023-45803", "severity": "HIGH", "message": "Request body not stripped on HTTP redirect to new origin."},
                 {"max_version": "1.26.5", "cve": "CVE-2021-33503", "severity": "HIGH", "message": "Catastrophic ReDoS in URL parser during authority resolution."},
                 {"max_version": "1.24.2", "cve": "CVE-2019-11324", "severity": "CRITICAL", "message": "CRL checking failure permits MITM attack."}
             ],
